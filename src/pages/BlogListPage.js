@@ -39,7 +39,14 @@ export default function BlogListPage() {
       setNewBlog({ title: "", description: "" });
       fetchBlogs();
     } catch (err) {
-      setError(err.response?.data?.error || "Blog creation failed.");
+      setError(
+  err.response?.data?.error ||
+  JSON.stringify(err.response?.data) ||
+  err.message ||
+  "Blog creation failed."
+);
+console.error("Blog create error:", err.response?.data, err);
+
     }
   };
 
