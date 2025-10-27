@@ -12,10 +12,14 @@ export function AuthProvider({ children }) {
     if (token && userId) setUser({ token, userId });
   }, []);
 
-  const login = ({ token, userId }) => {
+  const login = (data) => {
+    // Accept various shapes returned by the API (e.g. { token, userId } or { token, id })
+    const token = data?.token || data?.accessToken || data?.access_token || null;
+    const userId = data?.userId || data?.id || data?.user?.id || null;
+    if (!token || !userId) return;
     localStorage.setItem("token", token);
-    localStorage.setItem("userId", userId);
-    setUser({ token, userId });
+    localStorage.setItem("userId", String(userId));
+    setUser({ token, userId: String(userId) });
   };
 
   const logout = () => {

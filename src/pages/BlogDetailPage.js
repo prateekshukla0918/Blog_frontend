@@ -12,7 +12,10 @@ export default function BlogDetailPage() {
   const [message, setMessage] = useState("");
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkId, setBookmarkId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ title: "", description: "" });
   const { user } = useContext(AuthContext);
+  console.log(user)
 
   useEffect(() => {
     API.get(`/blogs/${id}`)
@@ -84,8 +87,31 @@ export default function BlogDetailPage() {
     }
   };
 
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    try {
+      await API.put(`/blogs/${blog.id}`, editForm);
+      const res = await API.get(`/blogs/${id}`);
+      setBlog(res.data);
+      setIsEditing(false);
+      setMessage("Blog updated!");
+    } catch {
+      setMessage("Failed to update blog.");
+    }
+  };
+
+  // Helper to determine ownership (tolerant to different id shapes)
+  const isOwner = () => {
+    if (!user || !blog) return false;
+    const uid = String(user.userId || user.id || user?.user?.id || user?.userId || "");
+    const ownerId = String(blog.user?.id ?? blog.userId ?? blog.user?._id ?? blog.user?.userId ?? "");
+    if (!uid || !ownerId) return false;
+    return Number(uid) === Number(ownerId);
+  };
+
   const handleDeleteBlog = async () => {
-    if (!user || blog.user?.id !== Number(user.userId)) return;
+    if (!isOwner()) return;
     if (!window.confirm("Are you sure you want to delete this blog?")) return;
     try {
       await API.delete(`/blogs/${blog.id}`);
@@ -93,6 +119,11 @@ export default function BlogDetailPage() {
     } catch {
       setMessage("Failed to delete blog.");
     }
+  };
+
+  const handleStartEdit = () => {
+    setEditForm({ title: blog.title || "", description: blog.description || "" });
+    setIsEditing(true);
   };
 
   if (!blog) return (
@@ -129,45 +160,76 @@ export default function BlogDetailPage() {
               {isBookmarked ? "Remove Bookmark" : "Bookmark"}
             </button>
           )}
-          {user && blog.user?.id === Number(user.userId) && (
-            <button
-              className="px-3 py-1 rounded border bg-red-600 text-white hover:bg-red-700"
-              onClick={handleDeleteBlog}
-            >
-              Delete Blog
-            </button>
+          {user && isOwner() && (
+            <>
+              <button
+                className="px-3 py-1 rounded border bg-yellow-500 text-white hover:bg-yellow-600"
+                onClick={handleStartEdit}
+              >
+                Edit
+              </button>
+              <button
+                className="px-3 py-1 rounded border bg-red-600 text-white hover:bg-red-700"
+                onClick={handleDeleteBlog}
+              >
+                Delete Blog
+              </button>
+            </>
           )}
         </div>
 
         {message && <div className="text-green-500 mb-4">{message}</div>}
 
-        <h3 className="mt-7 mb-2 text-lg font-semibold text-gray-800">
-          Comments ({blog.comments?.length || 0})
-        </h3>
-        <ul className="space-y-2">
-          {blog.comments?.map(c => (
-            <li key={c.id} className="bg-gray-50 rounded px-2 py-1 text-sm">
-              {c.content}
-            </li>
-          ))}
-        </ul>
-
-        {user && (
-          <form onSubmit={handleComment} className="mt-4 flex gap-2">
+        {isEditing ? (
+          <form onSubmit={handleUpdate} className="mb-4 space-y-2">
             <input
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Write your comment..."
+              value={editForm.title}
+              onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+              className="w-full border px-3 py-2 rounded"
               required
-              className="flex-1 border px-3 py-2 rounded"
             />
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition"
-            >
-              Post
-            </button>
+            <textarea
+              value={editForm.description}
+              onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+              className="w-full border px-3 py-2 rounded"
+              required
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setIsEditing(false)} className="px-3 py-1 rounded bg-gray-100">Cancel</button>
+              <button type="submit" className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">Save</button>
+            </div>
           </form>
+        ) : (
+          <>
+            <h3 className="mt-7 mb-2 text-lg font-semibold text-gray-800">
+              Comments ({blog.comments?.length || 0})
+            </h3>
+            <ul className="space-y-2">
+              {blog.comments?.map(c => (
+                <li key={c.id} className="bg-gray-50 rounded px-2 py-1 text-sm">
+                  {c.content}
+                </li>
+              ))}
+            </ul>
+
+            {user && (
+              <form onSubmit={handleComment} className="mt-4 flex gap-2">
+                <input
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  placeholder="Write your comment..."
+                  required
+                  className="flex-1 border px-3 py-2 rounded"
+                />
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition"
+                >
+                  Post
+                </button>
+              </form>
+            )}
+          </>
         )}
       </div>
     </div>
