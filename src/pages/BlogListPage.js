@@ -76,6 +76,7 @@ export default function BlogListPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <Navbar />
+
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20 text-center">
         <div className="max-w-2xl mx-auto">
@@ -94,68 +95,86 @@ export default function BlogListPage() {
         </div>
       </div>
 
-      {/* Filter and Sort Controls */}
-      <div className="max-w-4xl mx-auto px-4 -mt-8 relative z-10">
-        <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col sm:flex-row items-center gap-3">
-          <input
-            type="text"
-            placeholder="Search blogs..."
-            className="flex-1 border-none focus:ring-0 text-gray-700"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <span className="text-gray-400 text-sm">🔍</span>
-          <select
-            value={authorFilter}
-            onChange={e => setAuthorFilter(e.target.value)}
-            className="border rounded px-2 py-1 text-gray-700"
-          >
-            <option value="all">All Authors</option>
-            {authorOptions.map(email => (
-              <option key={email} value={email}>{email}</option>
-            ))}
-          </select>
-          <select
-            value={sortOrder}
-            onChange={e => setSortOrder(e.target.value)}
-            className="border rounded px-2 py-1 text-gray-700"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
+      {/* Controls Bar */}
+      <div className="sticky top-0 z-30 flex justify-center px-4 py-0 bg-transparent">
+        <div className="flex flex-wrap justify-between items-center gap-4 rounded-xl shadow-xl bg-white w-full max-w-4xl px-6 py-5 -mt-10">
+          {/* Search bar */}
+          <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+            <input
+              type="text"
+              placeholder="Search blogs…"
+              className="w-full border-2 border-blue-100 rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-blue-300 transition duration-200"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <span className="inline-block text-lg text-blue-400 ml-2">🔍</span>
+          </div>
+
+          {/* Author filter */}
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-600">Author:</span>
+            <select
+              value={authorFilter}
+              onChange={e => setAuthorFilter(e.target.value)}
+              className="border-2 border-purple-200 rounded-lg px-3 py-2 bg-purple-50 text-purple-700 focus:ring-2 focus:ring-purple-300 transition"
+            >
+              <option value="all">All</option>
+              {authorOptions.map(email => (
+                <option key={email} value={email}>
+                  {email === "Anonymous" ? "Anonymous" : email}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sorting */}
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-600">Sort:</span>
+            <select
+              value={sortOrder}
+              onChange={e => setSortOrder(e.target.value)}
+              className="border-2 border-blue-200 rounded-lg px-3 py-2 bg-blue-50 text-blue-700 focus:ring-2 focus:ring-blue-300 transition"
+            >
+              <option value="newest">Newest First </option>
+              <option value="oldest">Oldest First </option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Blog Cards Grid */}
-      <div className="max-w-6xl mx-auto px-4 py-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="max-w-6xl mx-auto px-4 pt-20 pb-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredBlogs.length > 0 ? (
           filteredBlogs.map(blog => (
             <div
               key={blog.id}
-              className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+              className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 border-t-4 border-blue-400"
             >
-              <div className="h-48 bg-gradient-to-r from-blue-200 to-purple-200 flex items-center justify-center text-gray-500 text-4xl font-bold">
+              <div className="h-48 bg-gradient-to-r from-blue-200 to-purple-200 flex items-center justify-center text-gray-500 text-4xl font-extrabold tracking-wide">
                 {blog.title.charAt(0).toUpperCase()}
               </div>
               <div className="p-5 flex flex-col h-full">
                 <Link
                   to={`/blogs/${blog.id}`}
-                  className="text-xl font-semibold text-gray-800 hover:text-blue-600 transition"
+                  className="text-2xl font-bold text-gray-800 hover:text-blue-600 transition"
                 >
                   {blog.title}
                 </Link>
-                <p className="text-gray-600 text-sm mt-2 flex-grow">
+                <p className="text-gray-600 text-base mt-2 flex-grow">
                   {blog.description.length > 100
                     ? blog.description.substring(0, 100) + "..."
                     : blog.description}
                 </p>
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-xs text-gray-500">
-                    by {blog.user?.email || "Anonymous"} | {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : ""}
+                    by <span className="font-semibold">{blog.user?.email || "Anonymous"}</span>
+                    {blog.createdAt && (
+                      <> | <span className="italic">{new Date(blog.createdAt).toLocaleDateString()}</span></>
+                    )}
                   </span>
                   {user && blog.user?.id === Number(user.userId) && (
                     <button
-                      className="text-red-600 text-sm hover:text-red-800"
+                      className="text-red-600 text-sm bg-red-100 px-2 py-1 rounded hover:bg-red-200 hover:text-red-800 transition"
                       onClick={() => handleDelete(blog.id)}
                     >
                       Delete
@@ -217,6 +236,5 @@ export default function BlogListPage() {
         </div>
       )}
     </div>
-    
   );
 }
