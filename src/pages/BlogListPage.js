@@ -7,6 +7,8 @@ import { AuthContext } from "../context/AuthContext";
 export default function BlogListPage() {
   const [blogs, setBlogs] = useState([]);
   const [search, setSearch] = useState("");
+  const [authorFilter, setAuthorFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
   const [showCreate, setShowCreate] = useState(false);
   const [newBlog, setNewBlog] = useState({ title: "", description: "" });
   const [error, setError] = useState("");
@@ -22,10 +24,25 @@ export default function BlogListPage() {
       .catch(() => setBlogs([]));
   };
 
-  const filteredBlogs = blogs.filter(b =>
-    b.title.toLowerCase().includes(search.toLowerCase()) ||
-    b.description.toLowerCase().includes(search.toLowerCase())
-  );
+  // Extract unique authors for filter dropdown
+  const authorOptions = [
+    ...new Set(blogs.map(b => b.user?.email || "Anonymous"))
+  ];
+
+  // Filtered and Sorted blogs pipeline
+  const filteredBlogs = blogs
+    .filter(b =>
+      (authorFilter === "all" || (b.user?.email || "Anonymous") === authorFilter) &&
+      (b.title.toLowerCase().includes(search.toLowerCase()) ||
+        b.description.toLowerCase().includes(search.toLowerCase()))
+    )
+    .sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      if (sortOrder === "newest") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -77,9 +94,9 @@ export default function BlogListPage() {
         </div>
       </div>
 
-      {/* Search Bar */}
+      {/* Filter and Sort Controls */}
       <div className="max-w-4xl mx-auto px-4 -mt-8 relative z-10">
-        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center gap-3">
+        <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col sm:flex-row items-center gap-3">
           <input
             type="text"
             placeholder="Search blogs..."
@@ -88,6 +105,24 @@ export default function BlogListPage() {
             onChange={e => setSearch(e.target.value)}
           />
           <span className="text-gray-400 text-sm">🔍</span>
+          <select
+            value={authorFilter}
+            onChange={e => setAuthorFilter(e.target.value)}
+            className="border rounded px-2 py-1 text-gray-700"
+          >
+            <option value="all">All Authors</option>
+            {authorOptions.map(email => (
+              <option key={email} value={email}>{email}</option>
+            ))}
+          </select>
+          <select
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value)}
+            className="border rounded px-2 py-1 text-gray-700"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
         </div>
       </div>
 
@@ -116,7 +151,7 @@ export default function BlogListPage() {
                 </p>
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-xs text-gray-500">
-                    by {blog.user?.email || "Anonymous"}
+                    by {blog.user?.email || "Anonymous"} | {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : ""}
                   </span>
                   {user && blog.user?.id === Number(user.userId) && (
                     <button
@@ -182,5 +217,6 @@ export default function BlogListPage() {
         </div>
       )}
     </div>
+    
   );
 }
